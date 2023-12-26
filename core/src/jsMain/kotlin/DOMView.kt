@@ -1,7 +1,5 @@
 import androidx.compose.foundation.layout.Box
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.*
 import kotlinx.browser.window
@@ -11,105 +9,97 @@ import helper.compositionLocalCanvasId
 import helper.compositionLocalParentId
 import org.w3c.dom.DOMRectReadOnly
 import org.w3c.dom.Element
+import org.w3c.dom.HTMLElement
 
 
-//val VIRTUAL_DOM  = mutableMapOf<String, VirtualNode>()
-//
-//
-//class VirtualNode(
-//    val id: String,
-//    val el: Element,
-//    val parentElement: Element
-//    // 作为一个节点映射
-////    val substitute: EventTarget
-//)
 
-val doms = mutableMapOf<String, Element>()
 
 
 @Composable
 fun DOMView(
-    show: Boolean,
-    id: String,
     modifier: Modifier,
-    factor: DOMViewScope.() -> Element,
-    onUpdate: DOMViewScope.() -> Unit,
-    onDestroy: DOMViewScope.() -> Unit,
-    content: DOMViewScope.() -> Unit
-){
-    console.log("isShow: ", show, doms[id])
-    if(show && doms[id] == null){
-        val parentElement = (compositionLocalParentId.current?:throw(Throwable("""
-            compositionLocalParentId.current? == null
-            at DOMView
-        """.trimIndent()))).let {
-                (window.document.querySelector("#$it")?:throw(Throwable("""
-                window.document.querySelector("#$it") == null
-                at DOMView
-            """.trimIndent())))
-        }
+    factor: DOMViewInitScope.() -> Element,
+    // ？？onUpdate 的是否有使用的场景，跟新的实际是什么？？
+    // ？？如果他 factory 返回的一个相同的 Element 会是什么情况了
+    // onUpdate: DOMViewUpdateScope.() -> Unit,
+    onResize: DOMViewResizeScope.() -> Unit,
+    onDestroy: DOMViewDestroyScope.() -> Unit,
+) {
 
-        val canvasId = compositionLocalCanvasId.current?:throw(Throwable("""
-        compositionLocalCanvasId.current == null
-        at DOMView
-    """.trimIndent()))
+    val parentElement = getParentElement<HTMLElement>(compositionLocalParentId.current)
+    val canvasId = getCanvasId(compositionLocalCanvasId.current)
+    var rect by remember { mutableStateOf(DOMRectReadOnly(x = 0.0, y = 0.0, width = 0.0, height = 0.0)) }
+    val currentDOMViewInitScope = DOMViewInitScope(parentElement = parentElement)
+    val element by remember{ mutableStateOf(factor(currentDOMViewInitScope)) }
 
-        val scope: DOMViewScope = DOMViewScope(
-            rect = DOMRectReadOnly(x = 0.0, y = 0.0, width = 0.0, height = 0.0),
-            parentElement = parentElement,
-            onUpdate = onUpdate
-        )
-
-        factor(scope).let {
-            scope.el = it
-            doms[id] = it
-            content(DOMViewScope(
-                rect = it.getBoundingClientRect(),
-                parentElement = it,
-            ))
-        }
-
-        Box(modifier = modifier.onGloballyPositioned{
-            // DOMView 的实际尺寸
-            val rect = it.getBoundingClientRect(canvasId)
-            scope.rect = rect
-        })
+    LaunchedEffect(element) {
+        // 挂载到新的的节点上
+        parentElement.appendChild(element)
     }
 
-    if(!show && doms[id] != null){
-        val parentElement = (compositionLocalParentId.current?:throw(Throwable("""
+    LaunchedEffect(rect) {
+        onResize(DOMViewResizeScope(element, rect))
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            onDestroy(DOMViewDestroyScope(element))
+        }
+    }
+
+    Box(modifier = modifier.onGloballyPositioned {
+        // DOMView 的实际尺寸
+        rect = it.getBoundingClientRect(canvasId)
+    })
+}
+
+class  DOMViewInitScope(
+    val parentElement: Element
+)
+
+class DOMViewUpdateScope(val selfElement: Element)
+
+class DOMViewDestroyScope(
+    val selfElement: Element
+)
+
+
+class DOMViewResizeScope(
+    val selfElement: Element,
+    val rect: DOMRectReadOnly,
+)
+
+
+inline fun <reified T: Element> getParentElement(id: String? = null): T {
+    return (id ?: throw (Throwable(
+        """
             compositionLocalParentId.current? == null
             at DOMView
-        """.trimIndent()))).let {
-            (window.document.querySelector("#$it")?:throw(Throwable("""
+        """.trimIndent()
+    ))).let {
+        val el = (window.document.querySelector("#$it")?: throw (Throwable(
+            """
                 window.document.querySelector("#$it") == null
                 at DOMView
-            """.trimIndent())))
-        }
-        onDestroy(DOMViewScope(
-            rect = DOMRectReadOnly(x = 0.0, y = 0.0, width = 0.0, height = 0.0),
-            el = doms[id],
-            parentElement = parentElement,
-            onUpdate = onUpdate
-        ))
-        doms.remove(id)
+            """.trimIndent()
+        )))
+        if(el is T) el else throw(Throwable("""
+            el 不是匹配的类型
+            at getParentElement
+        """.trimIndent()))
     }
 }
 
-class DOMViewScope(
-    rect: DOMRectReadOnly,
-    var el: Element? = null,
-    val parentElement: Element,
-    private val onUpdate : (DOMViewScope.() -> Unit)? = null
-){
-    var rect: DOMRectReadOnly = rect
-        get() = field
-        set(value) {
-            field = value
-            onUpdate?.let{
-                it()
-            }
-        }
+/**
+ * 获取canvasId
+ */
+fun getCanvasId(id: String? = null): String {
+    return id ?: throw (Throwable(
+        """
+        compositionLocalCanvasId.current == null
+        at DOMView
+    """.trimIndent()
+    ))
 }
 
 
@@ -138,14 +128,11 @@ fun LayoutCoordinates.getBoundingClientRect(
         // 获取到了 ComposeCanvas 元素相对于视口的位置
         val canvasOffset = window.document.querySelector("#${canvasElementId}")!!.run {
             val rect = getBoundingClientRect()
-            console.log("canvasRect: ", rect)
-            console.log("offset.y", offset.y)
             object {
                 val x = rect.x;
                 val y = rect.y
             }
         }
-
         x = canvasOffset.x + offset.x
         y = canvasOffset.y + offset.y
     } catch (e: NullPointerException) {
@@ -161,8 +148,8 @@ fun LayoutCoordinates.getBoundingClientRect(
     return DOMRectReadOnly(
         x = x,
         y = y,
-        width = size.width.toDouble(),
-        height = size.height.toDouble()
+        width = Converting.composeElementSizeToWebSize(size.width.toDouble()),
+        height = Converting.composeElementSizeToWebSize(size.height.toDouble())
     )
 }
 
