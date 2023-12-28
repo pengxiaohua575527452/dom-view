@@ -1,6 +1,8 @@
 package test.domview
 
+import CompositionStateProvider
 import DOMView
+import OnUpdate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -19,28 +20,46 @@ import org.jetbrains.skiko.wasm.onWasmReady
 import org.w3c.dom.HTMLElement
 
 
-fun testSingleInertRemove() {
+fun testStateList() {
     val el = window.document.createElement("div") as HTMLElement
+    var count = 0
     onWasmReady {
-        var count = 0
         RenderingPrepare(title = "标题") {
-            var isShow by remember { mutableStateOf(true) }
+            val listData = remember { mutableStateListOf<Int>(count++) }
+            // 向 web 原生提供数据
+            CompositionStateProvider("list", snapshotFlow{ listData.toList() })
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth().height(100.dp).background(Color(0xFFFF0000))
                 ) {
                     Button(
                         onClick = {
-                            isShow = !isShow
-                        }, modifier = Modifier.fillMaxWidth().height(60.dp)
+                            listData.add(0, count++)
+                        }, modifier = Modifier.fillMaxWidth().height(60.dp).weight(1f)
                     ) {
-                        Text("click")
+                        Text("add 0")
+                    }
+
+                    Button(
+                        onClick = {
+                            listData.add(count++)
+                        }, modifier = Modifier.fillMaxWidth().height(60.dp).weight(1f)
+                    ) {
+                        Text("add")
+                    }
+
+                    Button(
+                        onClick = {
+                            listData.removeRange(1,2)
+                        }, modifier = Modifier.fillMaxWidth().height(60.dp).weight(1f)
+                    ) {
+                        Text("removeRange(1,2)")
                     }
                 }
 
-                if (isShow) {
-                    DOMView<HTMLElement, Any>(modifier = Modifier.fillMaxWidth().height(300.dp).background(Color(0xFFAAAAAA)), factor = {
-                        el.innerHTML = "content aaaa"
+                DOMView<HTMLElement, List<Int>>(modifier = Modifier.fillMaxWidth().height(300.dp).background(Color(0xFFAAAAAA)),
+                    factor = {
+                        el.innerHTML = listData.joinToString(separator = "-")
                         el.setAttribute(
                             "style", """
                                 position: absolute;
@@ -48,41 +67,23 @@ fun testSingleInertRemove() {
                             """.trimIndent()
                         )
                         el
-                    }, onResize = {
+                    },
+                    onUpdate = OnUpdate(listOf("list")){
+                       when(value){
+                           is List<*> ->selfElement.innerHTML =  (value as List<*>).joinToString(separator = "-")
+                       }
+                    },
+                    onResize = {
                         selfElement.run {
                             style.width = "${rect.width}px"
                             style.height = "${rect.height}px"
                             style.top = "${rect.y}px"
                             style.left = "${rect.x}px"
                         }
-                    }, onDestroy = {
+                    },
+                    onDestroy = {
                         selfElement.remove()
                     })
-                }else{
-                    DOMView<HTMLElement, Any>(modifier = Modifier.fillMaxWidth().height(300.dp).background(Color(0xFFAAAAAA)), factor = {
-                        el.innerHTML = "content   bbbbb"
-                        el.setAttribute(
-                            "style", """
-                                position: absolute;
-                                background: blue;
-                            """.trimIndent()
-                        )
-                        el
-                    }, onResize = {
-                        (selfElement as HTMLElement).run {
-                            style.width = "${rect.width}px"
-                            style.height = "${rect.height}px"
-                            style.top = "${rect.y}px"
-                            style.left = "${rect.x}px"
-                        }
-                    }, onDestroy = {
-                        selfElement.remove()
-                    })
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().height(100.dp).background(Color(0xFFFF0000))
-                ) {}
             }
         }
     }

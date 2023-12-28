@@ -9,19 +9,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.CanvasBasedWindow
 import androidx.compose.ui.window.Window
+import jsApp.test.compose.testComposableExecutionLogic
 import jsApp.test.compose.testDisposableEffect
-import jsApp.test.domview.multipleInsertRemove
-import jsApp.test.domview.testSingleInertRemove
+import jsApp.test.compose.testLaunchedEffect
 import kotlinx.browser.window
 import kotlinx.coroutines.delay
 import org.dweb_browser.compose.RenderingPrepare
 import org.jetbrains.skiko.wasm.onWasmReady
 import org.w3c.dom.Element
 import org.w3c.dom.HTMLElement
+import test.domview.testStateList
+import test.domview.testStateMultiple
 
 fun main() {
-    testSingleInertRemove()
+//    testDisposableEffect()
+//    testSingleInertRemove()
 //    multipleInsertRemove()
+//    testState()
+//    testStateList()
+    testStateMultiple()
+
+//    testComposableExecutionLogic()
+//    testLaunchedEffect()
+
 }
 
 /**
@@ -84,21 +94,21 @@ fun main() {
 //}
 
 
-@Composable
-inline fun Span(
-    // key 作为一个标识符
-    key: String
-){
-    val el by remember { mutableStateOf(window.document.createElement("div")) }
-    val shouldUpdate = rememberUpdatedState(key)
-
-
-
-    if (shouldUpdate.value == key ) {
-        console.log("不需要更新")
-    }else{
-        console.log("需要更新")
-    }
-}
+//@Composable
+//inline fun Span(
+//    // key 作为一个标识符
+//    key: String
+//){
+//    val el by remember { mutableStateOf(window.document.createElement("div")) }
+//    val shouldUpdate = rememberUpdatedState(key)
+//
+//
+//
+//    if (shouldUpdate.value == key ) {
+//        console.log("不需要更新")
+//    }else{
+//        console.log("需要更新")
+//    }
+//}
 
 

@@ -14,7 +14,7 @@ fun testDisposableEffect() {
     onWasmReady {
         RenderingPrepare(title = "title") {
             val listData = remember { mutableStateListOf("$count++") }
-
+            var isShow by remember { mutableStateOf(true) }
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -31,11 +31,22 @@ fun testDisposableEffect() {
                             listData.add("${count++}")
                         }, modifier = Modifier.width(0.dp).fillMaxHeight().weight(1f)
                     ) { Text("add") }
+
+                    Button(
+                        onClick = {
+                            isShow = !isShow
+                        }, modifier = Modifier.width(0.dp).fillMaxHeight().weight(1f)
+                    ) { Text("isShow") }
                 }
 
-                listData.forEach {
-                    Test()
+                if(isShow){
+
                 }
+                Test()
+
+//                listData.forEach {
+//                    Test()
+//                }
             }
         }
     }

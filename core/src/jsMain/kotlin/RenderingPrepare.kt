@@ -45,19 +45,6 @@ fun RenderingPrepare(title: String, content: @Composable () -> Unit) {
             it.setAttribute("id", HTML_CANVAS_ELEMENT_ID)
             appendChild(it)
         }
-//        var debounceJog: Job? = null
-//        ResizeObserver{ entries, observer ->
-//            debounceJog?.cancel()
-//            debounceJog = CoroutineScope(Dispatchers.Main).launch {
-//                delay(30)
-//                val intSize = IntSize(entries[0].contentRect.width.toInt(), entries[0].contentRect.height.toInt())
-//                if(canvasSize!!.complete(intSize)){
-//                    canvasSize = CompletableDeferred<IntSize>()
-//                    canvasSize?.complete(intSize)
-//                    console.log("尺寸发生了改变")
-//                }
-//            }
-//        }.observe(this)
         CanvasBasedWindow(title = title, canvasElementId = HTML_CANVAS_ELEMENT_ID
         ) {
             CompositionLocalProvider(compositionLocalParentId provides HTML_BODY_ELEMENT_ID) {

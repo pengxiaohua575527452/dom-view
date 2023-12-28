@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="testCompose-js">
+    <output-path>$PROJECT_DIR$/testCompose/build/libs</output-path>
+    <root id="archive" name="testCompose-js.jar">
+      <element id="module-output" name="dom-view.testCompose.jsMain" />
+    </root>
+  </artifact>
+</component>

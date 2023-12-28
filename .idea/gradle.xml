@@ -10,6 +10,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/core" />
             <option value="$PROJECT_DIR$/jsApp" />
+            <option value="$PROJECT_DIR$/testCompose" />
           </set>
         </option>
       </GradleProjectSettings>

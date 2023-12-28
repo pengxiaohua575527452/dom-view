@@ -19,3 +19,4 @@ rootProject.name = "dom-view"
 
 include(":core")
 include(":jsApp")
+include(":testCompose")
