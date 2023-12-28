@@ -1,6 +1,9 @@
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
 /**
  * 目标
@@ -9,45 +12,33 @@ import kotlinx.coroutines.flow.Flow
  */
 
 
-typealias CompositionStateInjectFun = (arg: Any) -> Unit
-private val observeMap = mutableMapOf<String, MutableList<CompositionStateInjectFun>>()
-
-/**
- * 想web原生注入compose 状态
- */
-@Suppress("FunctionName")
-fun  CompositionStateInject (key: String, inject: CompositionStateInjectFun){
-    observeMap[key] = (observeMap[key]?:mutableListOf()).apply {
-        add(inject)
-    }
-}
+typealias CompositionStateInjectFun = (key: String, arg: Any) -> Unit
 
 /**
  * 提供Compose的状态
  * 只能够在 @Composable 函数中使用
  */
 @Composable
-fun CompositionStateProvider(key: String, f: Flow<Any>){
-    LaunchedEffect(Unit){
-        observeMap[key] =  observeMap[key]?: mutableListOf()
-        f.collect{
-            observeMap[key]?.forEach { callback ->
-                callback(it)
-            }
-        }
-    }
+fun CompositionStateProvider(key: String, f: Flow<Any>): CompositionState {
+    return remember { CompositionState(key, f) }
 }
 
 
-//val compositionStates = mutableMapOf<CompositionState, List<CompositionStateInjectFun>>()
-
 class CompositionState(
-    val key: String,
+    private val key: String,
     private val f: Flow<Any>
 ){
+    init {
+        CoroutineScope(Dispatchers.Main).launch {
+            f.collect{
+                list.forEach { callback ->
+                    callback(key, it)
+                }
+            }
+        }
+    }
     private val list = mutableListOf<CompositionStateInjectFun>()
-
-    fun onUpdate(fn: CompositionStateInjectFun){
+    fun add(fn: CompositionStateInjectFun){
         list.add(fn)
     }
 }

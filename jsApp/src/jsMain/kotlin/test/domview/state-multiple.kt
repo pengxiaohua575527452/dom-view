@@ -1,6 +1,6 @@
 package test.domview
 
-import CompositionStateInject
+//import CompositionStateInject
 import CompositionStateProvider
 import DOMView
 import OnUpdate
@@ -33,8 +33,8 @@ fun testStateMultiple() {
             val listData = remember { mutableStateListOf<Int>(count++) }
 
             // 向 web 原生提供数据
-            CompositionStateProvider("count", snapshotFlow { count })
-            CompositionStateProvider("list", snapshotFlow{ listData.toList() })
+            val compositionStateCount = CompositionStateProvider("count", snapshotFlow { count })
+            val compositionStateListData = CompositionStateProvider("list", snapshotFlow{ listData.toList() })
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth().height(100.dp).background(Color(0xFFFF0000))
@@ -67,7 +67,7 @@ fun testStateMultiple() {
                         el
                     },
                     // listOf() 是用来标注使用那些 CompositionStateProvider 提供的数据
-                    onUpdate = OnUpdate(listOf("count", "list")){
+                    onUpdate = OnUpdate(listOf(compositionStateCount, compositionStateListData)){
                         when(key){
                             "count" -> selfElement.innerHTML = value.toString()
                             "list" -> selfElement.innerHTML = (value as List<*>).joinToString(separator = "-")

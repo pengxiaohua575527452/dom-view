@@ -1,6 +1,6 @@
 package test.domview
 
-import CompositionStateInject
+//import CompositionStateInject
 import CompositionStateProvider
 import DOMView
 import OnUpdate
@@ -30,7 +30,7 @@ fun testState() {
         RenderingPrepare(title = "标题") {
             var count by remember { mutableStateOf(0) }
             // 向 web 原生提供数据
-            CompositionStateProvider("count", snapshotFlow { count })
+            val compositionCount = CompositionStateProvider("count", snapshotFlow { count })
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth().height(100.dp).background(Color(0xFFFF0000))
@@ -56,7 +56,7 @@ fun testState() {
                         el
                     },
                     // listOf() 是用来标注使用那些 CompositionStateProvider 提供的数据
-                    onUpdate = OnUpdate(listOf("count")){
+                    onUpdate = OnUpdate(listOf(compositionCount)){
                         when(key){
                             "count" -> selfElement.innerHTML = value.toString()
                             else -> console.error("还没有处理更新")

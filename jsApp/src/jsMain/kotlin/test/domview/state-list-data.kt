@@ -27,7 +27,7 @@ fun testStateList() {
         RenderingPrepare(title = "标题") {
             val listData = remember { mutableStateListOf<Int>(count++) }
             // 向 web 原生提供数据
-            CompositionStateProvider("list", snapshotFlow{ listData.toList() })
+            val compositionStateListData = CompositionStateProvider("list", snapshotFlow{ listData.toList() })
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth().height(100.dp).background(Color(0xFFFF0000))
@@ -68,7 +68,7 @@ fun testStateList() {
                         )
                         el
                     },
-                    onUpdate = OnUpdate(listOf("list")){
+                    onUpdate = OnUpdate(listOf(compositionStateListData)){
                        when(value){
                            is List<*> ->selfElement.innerHTML =  (value as List<*>).joinToString(separator = "-")
                        }

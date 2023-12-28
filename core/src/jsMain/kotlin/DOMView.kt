@@ -28,8 +28,8 @@ fun <T : Element, V: Any> DOMView(
         // 挂载到新的的节点上
         parentElement.appendChild(element)
         onUpdate?.let {update->
-            update.keys.forEach { key ->
-                CompositionStateInject(key) { value ->
+            update.keys.forEach { compositionState ->
+                compositionState.add { key, value ->
                     onUpdate.handle(DOMViewUpdateScope(element, key, value))
                 }
             }
@@ -54,7 +54,7 @@ fun <T : Element, V: Any> DOMView(
 
 
 class OnUpdate<T: Element, V: Any>(
-    val keys: List<String>, val handle: DOMViewUpdateScope<T,V>.() -> Unit
+    val keys: List<CompositionState>, val handle: DOMViewUpdateScope<T,V>.() -> Unit
 )
 
 class DOMViewInitScope<T : Element>(
